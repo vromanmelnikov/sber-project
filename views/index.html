@@ -81,10 +81,12 @@
     </style>
     <script type="text/javascript">
 
+        //алфавиты для валидации значений
         const ruLetters = ['А', 'В', 'Е', 'К', 'М', 'Н', 'О', 'Р', 'С', 'Т', 'У', 'Х'];
         const enLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
         const letters = [...ruLetters, ...enLetters];
 
+        //получаем данные и отображаем список
         (async function () {
 
             let responce = await fetch('/getAll')
@@ -102,22 +104,26 @@
             });
         })()
 
+        //функция поиска значений
         async function findItem(event) {
 
             event.preventDefault()
             let form = event.target
 
+            //получаем значения из формы
             let serial = form.elements[0].value.toUpperCase()
             let number = form.elements[1].value
             let code = form.elements[2].value
 
             // console.log(serial, number, code)
 
+            //если поля пустые
             if (serial == '' || number == '' || code == '') {
                 addPopup('Поля не должны быть пустыми!')
                 return
             }
 
+            //если поля не корректны по длине
             if (serial.length != 3 || number.length != 3 || code.length < 2 || code.length > 3) {
                 addPopup(`
                 Введены некорректные данные!\n
@@ -127,6 +133,7 @@
                 return
             }
 
+            //если поля имеют некоррентные значения
             if (isCorrectString(serial) == false || isNumeric(number) == false || isNumeric(code) == false) {
                 addPopup(`
                 Введены некорректные данные!\n
@@ -139,13 +146,11 @@
 
             let value = serial[0] + number + serial.slice(1) + code
 
-            // console.log(value)
-
+            //получаем результат поиска значения
             let responce = await fetch('/findItem?value=' + value)
             let result = await responce.json()
 
-            // console.log(result)
-
+            //отображаем результат
             let span = document.getElementById('result')
             if (!span) {
                 span = document.createElement('span')
@@ -153,13 +158,16 @@
                 document.getElementsByTagName('form')[0].appendChild(span)
             }
 
+            //меняем значение, если номер не найден
             if (result.flag == false) {
                 span.textContent = 'Номер не найден!'
             }
+            //меняем значение, если номер найден, и выделяем его из списка
             else {
                 let tr = document.getElementById('number_' + result.index)
                 if (tr) {
 
+                    //выделяем из списка и перелистываем страницу к нему
                     tr.style.backgroundColor = '#b4ffa5'
                     window.scroll({
                         top: tr.offsetTop - 200,
@@ -172,6 +180,7 @@
             }
         }
 
+        //добавление выспывающего оповещения
         function addPopup(message) {
             let popup = document.createElement('span')
             popup.className = 'popup'
@@ -179,10 +188,12 @@
             document.getElementById('input-item').appendChild(popup)
         }
 
+        //проверка значения на число
         function isNumeric(value) {
             return /^\d+$/.test(value);
         }
 
+        //провека на корректность символьной сроки
         function isCorrectString(value) {
             for (let i = 0; i < value.length; i++) {
                 if (letters.indexOf(value[i]) == -1) {
@@ -192,6 +203,7 @@
             return true
         }
 
+        //обработчик события клика для закрытия вспывающего оповещения
         document.addEventListener(
             'click',
             (event) => {
@@ -201,13 +213,6 @@
                 }
             }
         )
-
-        // async function findItem_2() {
-        //     let value = document.getElementById('draft').value
-        //     let responce = await fetch('/findItem?value=' + value)
-        //     let result = await responce.json()
-        //     console.log(result.flag)
-        // }
 
     </script>
 </head>
@@ -224,9 +229,6 @@
 
     </div>
     <div class="working">
-
-        <!-- <input type="text" id="draft" />
-        <button onclick="findItem_2()">Поиск</button> -->
 
         <form onsubmit="findItem(event)">
             <div class="form-item" id="input-item">
