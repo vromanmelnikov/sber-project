@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Работа с файлом</title>
+    <meta charset="utf-8" />
+    <style>
+        * {
+            font-family: "Segoe UI", "Frutiger", "Frutiger Linotype", "Dejavu Sans", "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            margin: 1rem 0;
+            padding: 0;
+            display: flex;
+            flex-direction: row;
+        }
+
+        h1 {
+            margin: 0;
+            margin-bottom: 1rem;
+        }
+
+        .list,
+        .working {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        table {
+            min-width: 200px;
+            border-collapse: collapse;
+            border: 1px solid grey;
+        }
+
+        th,
+        td {
+            padding: 10px 15px;
+            border-bottom: 1px solid grey;
+        }
+
+        form {
+            gap: .5rem;
+            position: fixed;
+            top: 50%;
+            right: 25%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+        }
+
+        form * {
+            font-size: 18px;
+        }
+
+        .form-item {
+            display: flex;
+            flex-direction: column;
+            gap: .1rem;
+            position: relative;
+        }
+
+        .form-item label {
+            font-size: 13px;
+        }
+
+        .popup {
+            width: 200px;
+            position: absolute;
+            left: 110%;
+            top: 0;
+            text-align: center;
+            background-color: rgb(242, 239, 239);
+            border-radius: 5px;
+            border: 1px solid grey;
+            padding: .5rem 1rem;
+            font-size: 12px;
+        }
+    </style>
+    <script type="text/javascript">
+
+        const ruLetters = ['А', 'В', 'Е', 'К', 'М', 'Н', 'О', 'Р', 'С', 'Т', 'У', 'Х'];
+        const enLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        const letters = [...ruLetters, ...enLetters];
+
+        (async function () {
+
+            let responce = await fetch('/getAll')
+            data = await responce.json()
+
+            let table = document.getElementById('numbers')
+
+            data.forEach((item, index) => {
+                let tr = document.createElement('tr')
+                tr.id = "number_" + index
+                tr.innerHTML = `
+                    <td>${item.Name}</td>
+                `
+                table.appendChild(tr)
+            });
+        })()
+
+        async function findItem(event) {
+
+            event.preventDefault()
+            let form = event.target
+
+            let serial = form.elements[0].value.toUpperCase()
+            let number = form.elements[1].value
+            let code = form.elements[2].value
+
+            // console.log(serial, number, code)
+
+            if (serial == '' || number == '' || code == '') {
+                addPopup('Поля не должны быть пустыми!')
+                return
+            }
+
+            if (serial.length != 3 || number.length != 3 || code.length < 2 || code.length > 3) {
+                addPopup(`
+                Введены некорректные данные!\n
+                Серийный и регистрационный номера должны содержать 3 символа.\n
+                Код региона может содержать 2 или 3 символа.
+                `)
+                return
+            }
+
+            if (isCorrectString(serial) == false || isNumeric(number) == false || isNumeric(code) == false) {
+                addPopup(`
+                Введены некорректные данные!\n
+                Серийный номер должен содержать только буквы "А,В,Е,К,М,Н,О,Р,С,Т,У,Х".\n
+                Регистрационный номер и код региона может содержать только цифры!.
+                `)
+                return
+            }
+
+
+            let value = serial[0] + number + serial.slice(1) + code
+
+            // console.log(value)
+
+            let responce = await fetch('/findItem?value=' + value)
+            let result = await responce.json()
+
+            // console.log(result)
+
+            let span = document.getElementById('result')
+            if (!span) {
+                span = document.createElement('span')
+                span.id = 'result'
+                document.getElementsByTagName('form')[0].appendChild(span)
+            }
+
+            if (result.flag == false) {
+                span.textContent = 'Номер не найден!'
+            }
+            else {
+                let tr = document.getElementById('number_' + result.index)
+                if (tr) {
+
+                    tr.style.backgroundColor = '#b4ffa5'
+                    window.scroll({
+                        top: tr.offsetTop - 200,
+                        behavior: 'smooth'
+                    });
+
+                    span.textContent = 'Номер найден!'
+                    document.getElementsByTagName('form')[0].appendChild(span)
+                }
+            }
+        }
+
+        function addPopup(message) {
+            let popup = document.createElement('span')
+            popup.className = 'popup'
+            popup.textContent = message
+            document.getElementById('input-item').appendChild(popup)
+        }
+
+        function isNumeric(value) {
+            return /^\d+$/.test(value);
+        }
+
+        function isCorrectString(value) {
+            for (let i = 0; i < value.length; i++) {
+                if (letters.indexOf(value[i]) == -1) {
+                    return false
+                }
+            }
+            return true
+        }
+
+        document.addEventListener(
+            'click',
+            (event) => {
+                let popup = document.getElementsByClassName('popup')[0]
+                if (popup) {
+                    popup.parentElement.removeChild(popup)
+                }
+            }
+        )
+
+        // async function findItem_2() {
+        //     let value = document.getElementById('draft').value
+        //     let responce = await fetch('/findItem?value=' + value)
+        //     let result = await responce.json()
+        //     console.log(result.flag)
+        // }
+
+    </script>
+</head>
+
+<body>
+    <div class="list">
+        <h1>Список номеров</h1>
+        <table id="numbers">
+            <tr>
+                <th>Номер</th>
+            </tr>
+
+        </table>
+
+    </div>
+    <div class="working">
+
+        <!-- <input type="text" id="draft" />
+        <button onclick="findItem_2()">Поиск</button> -->
+
+        <form onsubmit="findItem(event)">
+            <div class="form-item" id="input-item">
+                <label>
+                    Серия автомобиля
+                </label>
+                <input type="text" placeholder="ААА" class="input" />
+            </div>
+            <div class="form-item">
+                <label>
+                    Регистрационный номер
+                </label>
+                <input type="text" placeholder="000" class="input" />
+            </div>
+            <div class="form-item">
+                <label>
+                    Код региона регистрации
+                </label>
+                <input type="text" placeholder="777" class="input" />
+            </div>
+            <input type="submit" placeholder="Найти" />
+        </form>
+    </div>
+
+</body>
+<html>
